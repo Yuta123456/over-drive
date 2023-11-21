@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Over Drive",
   description: "ドライブ用のプレイリストを自動で作れるアプリです",
+  icons: {
+    icon: "../../public/logo.svg",
+  },
 };
 
 export default function RootLayout({

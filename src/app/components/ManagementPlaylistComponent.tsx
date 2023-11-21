@@ -1,5 +1,4 @@
 "use client";
-import { playlistAtom } from "@/app/atoms";
 import { db } from "@/firebase";
 import { Playlist } from "@/type";
 import {

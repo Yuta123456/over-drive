@@ -4,11 +4,14 @@ import { Playlist } from "@/type";
 import { copyToClipboard, redirectToAuthCodeFlow } from "@/utils";
 import { Box, Button, IconButton, Input, Text } from "@chakra-ui/react";
 import { collection, setDoc, doc } from "firebase/firestore";
+import drive from "../../public/drive.svg";
+import music from "../../public/music.svg";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { FaCopy } from "react-icons/fa";
 import { useToast } from "@chakra-ui/react";
+import Image from "next/image";
 export default function Home() {
   const [playlistName, setPlaylistName] = useState("");
   const [isCreated, setIsCreated] = useState(false);
@@ -43,7 +46,9 @@ export default function Home() {
     >
       {!isCreated ? (
         <>
-          <Text>ドライブ用のプレイリスト作成できます</Text>
+          <Image src={drive} alt="over drive" width={300} />
+
+          <Text>ドライブ用のプレイリストを作成できます</Text>
           <Input
             marginTop={30}
             width={"50%"}
@@ -68,9 +73,13 @@ export default function Home() {
         </>
       ) : (
         <>
-          <Text>プレイリストを作成しました</Text>
-          <Text>友達にURLを共有してプレイリストを作成しましょう</Text>
-          <Box display={"flex"}>
+          <Image src={music} alt="listening music" width={300} />
+          <Text marginTop={10} fontSize={20} textAlign={"center"}>
+            プレイリストを作成しました！
+            <br />
+            友達にURLを共有してプレイリストを作成しましょう！
+          </Text>
+          <Box display={"flex"} marginTop={10}>
             <Input variant="outline" value={shareURL} marginRight={5} />{" "}
             <IconButton
               icon={<FaCopy />}

@@ -27,7 +27,9 @@ export const Header: FC<HeaderProps> = ({ title }) => {
         onClick={() => router.push("/")}
       >
         <Image src={logo} alt="over drive" width={100} color="white" />
-        <Heading color={"black"}>{title}</Heading>
+        <Heading color={"black"} marginLeft={3}>
+          {title}
+        </Heading>
       </Box>
     </Container>
   );
