@@ -20,7 +20,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Header title="app" />
+          <Header title="Over Drive" />
           <Container h={100} maxW="100%">
             {children}
           </Container>

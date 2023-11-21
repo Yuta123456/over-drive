@@ -2,7 +2,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { Artist, Playlist } from "./type";
 import { db } from "./firebase";
 
-const clientId = "602be77013674f7b92c888d547dc627a"; // Replace with your client id
+const clientId = "602be77013674f7b92c888d547dc627a";
 const code = undefined;
 
 async function redirectToAuthCodeFlow(playlistId?: string) {
@@ -45,7 +45,10 @@ async function generateCodeChallenge(codeVerifier: string) {
     .replace(/=+$/, "");
 }
 
-async function getUserAccessToken(code: string): Promise<string> {
+async function getUserAccessToken(code: string): Promise<string | null> {
+  if (!code) {
+    return null;
+  }
   const verifier = sessionStorage.getItem("verifier");
 
   const params = new URLSearchParams();
@@ -61,8 +64,15 @@ async function getUserAccessToken(code: string): Promise<string> {
     body: params,
   });
 
-  const { access_token } = await result.json();
-  return access_token;
+  const newAccessInfo = await result.json();
+  console.log(newAccessInfo);
+  if (typeof window !== "undefined" && newAccessInfo.access_token) {
+    const currentTimeSeconds: number = Math.floor(new Date().getTime() / 1000);
+
+    newAccessInfo.createAt = currentTimeSeconds;
+    sessionStorage.setItem("accessInfo", JSON.stringify(newAccessInfo));
+  }
+  return newAccessInfo.access_token;
   // TODO: Get access token for code
 }
 
@@ -190,8 +200,53 @@ const addTracks = async (
   );
 };
 
+function copyToClipboard(text: string) {
+  if (navigator.clipboard) {
+    return navigator.clipboard.writeText(text);
+  }
+}
+
+const getAccessTokenFromLocalStorage = async (): Promise<null | string> => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const accessInfoString = sessionStorage.getItem("accessInfo");
+  if (!accessInfoString) {
+    return null;
+  }
+
+  const accessInfo = JSON.parse(accessInfoString);
+  const createAt: number = accessInfo.createAt;
+  const expiresIn: number = accessInfo.expires_in;
+  const currentTimeSeconds: number = Math.floor(new Date().getTime() / 1000);
+  console.log(
+    createAt + expiresIn > currentTimeSeconds,
+    createAt,
+    expiresIn,
+    currentTimeSeconds
+  );
+  if (createAt + expiresIn > currentTimeSeconds) {
+    return accessInfo.access_token;
+  }
+  // 有効期限がすぎている場合
+  const params = new URLSearchParams();
+  // params.append("client_id", clientId);
+  params.append("refresh_token", accessInfo.refresh_token);
+  params.append("grant_type", "authorization_code");
+  const newAccessInfo = await fetch("https://accounts.spotify.com/api/token", {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    method: "POST",
+    body: params,
+  }).then((r) => r.json());
+  newAccessInfo.createAt = currentTimeSeconds;
+  sessionStorage.setItem("accessInfo", JSON.stringify(accessInfo));
+  return newAccessInfo.access_token;
+};
+// {"access_token":"BQDHsyOwzkDHB1aGuXIUfYTXmkihcer6AWo8TDGjqPJmSfdZ4cFKPHxctzlfTzPmAH02esg5Dcgus3L8rPkaQj7ib8DS11oPippoC0UqBLC8IDJTZVp40wVsx9XsY2tF7R-Jq9sHoxqhzQZGHID4e1_nntzome91hAJgKBQmvYFgvhumGY-HtifaeJ9Th2UGzcr_3eWU20I0f84MzGjrhsGudJ1WLBaknnX8Hml3Pdxsp0eeg2r_9Q1Ss3erBCpiTVqkrglE","token_type":"Bearer","expires_in":3600,"refresh_token":"AQD46--PWbPCfjX1343l-avJE05oHm8lj-xXL5Mf8hu7T5mNadBwFqXCexe3cMWXiLjlpCJE_bTaULxcl5cbhNu0kxY9bFzpFpyNP6wIMhnwU5GDEi-BGjmEIlnfrTWXVdA","scope":"user-library-read user-follow-read playlist-modify-public user-read-email user-read-private user-top-read","createAt":1700566989}
 export {
   addTracks,
+  getAccessTokenFromLocalStorage,
+  copyToClipboard,
   createPlaylist,
   redirectToAuthCodeFlow,
   clientId,

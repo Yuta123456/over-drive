@@ -1,8 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRecoilState } from "recoil";
-import { playlistAtom } from "../atoms";
 import { getUserAccessToken } from "@/utils";
 
 export default function Home() {
@@ -18,13 +16,10 @@ export default function Home() {
   const setAccessToken = async () => {
     if (code) {
       const accessToken = await getUserAccessToken(code);
-      if (accessToken) {
-        sessionStorage.setItem("accessToken", accessToken);
-      }
+      console.log(accessToken, playlistId);
       if (playlistId) {
         router.push("/view/" + playlistId);
       }
-      console.log(accessToken, playlistId);
     }
   };
   setAccessToken();

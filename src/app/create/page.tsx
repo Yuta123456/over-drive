@@ -23,7 +23,6 @@ export default function Home() {
     if (typeof window !== undefined) {
       sessionStorage.setItem("playlistId", playlistId);
     }
-    console.log(window.location.origin + "/view/" + playlistId);
     setShareURL(window.location.origin + "/view/" + playlistId);
   };
   return !isCreated ? (

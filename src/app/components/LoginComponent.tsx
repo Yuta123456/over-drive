@@ -11,18 +11,7 @@ export const LoginComponent = () => {
       プレイリストに参加
       <Button
         onClick={() => {
-          const params = new URLSearchParams(window.location.search);
-          const code = params.get("code");
-          const fetchResult = async () => {
-            if (!code) {
-              redirectToAuthCodeFlow();
-            } else {
-              const accessToken = await getUserAccessToken(code);
-              const follow = await getFollowedArtists(accessToken);
-              console.log(follow);
-            }
-          };
-          fetchResult();
+          redirectToAuthCodeFlow();
         }}
       >
         Spotifyにログイン
