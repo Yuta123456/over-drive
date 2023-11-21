@@ -7,6 +7,7 @@ import {
   addTracks,
   getFollowedArtists,
   redirectToAuthCodeFlow,
+  getAccessTokenFromLocalStorage,
 } from "@/utils";
 import { Box, Button } from "@chakra-ui/react";
 import {
@@ -22,8 +23,18 @@ import { useRecoilState } from "recoil";
 import useSWR from "swr";
 
 export const ManagementPlaylistComponent = () => {
-  const accessToken =
-    typeof window !== undefined ? sessionStorage.getItem("accessToken") : null;
+  const [accessToken, setAccessToken] = useState<string>();
+  useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    getAccessTokenFromLocalStorage(signal).then((r) => {
+      if (r) {
+        setAccessToken(r);
+      }
+    });
+    return () => controller.abort();
+  }, []);
+
   const playlistFirebaseId =
     typeof window !== undefined ? sessionStorage.getItem("playlistId") : null;
   const [isAttend, setIsAttend] = useState(false);
@@ -49,6 +60,7 @@ export const ManagementPlaylistComponent = () => {
         return;
       }
       const { playlistData, playlistDocumentId } = playlistInfo;
+      setPlaylistDocumentId(playlistDocumentId);
       console.log(playlistData);
 
       setPlaylistData(playlistData);
@@ -59,10 +71,11 @@ export const ManagementPlaylistComponent = () => {
     if (!accessToken || !playlistData) {
       return;
     }
+    console.log(accessToken, playlistData, playlistDocumentId);
     const followArtist = await getFollowedArtists(accessToken);
 
-    const playlistRef = doc(db, "playlists", playlistDocumentId);
     console.log(followArtist);
+    const playlistRef = doc(db, "playlists", playlistDocumentId);
     await updateDoc(playlistRef, {
       ...playlistData,
       // 重複する

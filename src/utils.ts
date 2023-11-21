@@ -206,7 +206,9 @@ function copyToClipboard(text: string) {
   }
 }
 
-const getAccessTokenFromLocalStorage = async (): Promise<null | string> => {
+const getAccessTokenFromLocalStorage = async (
+  signal: AbortSignal
+): Promise<null | string> => {
   if (typeof window === "undefined") {
     return null;
   }
@@ -237,6 +239,7 @@ const getAccessTokenFromLocalStorage = async (): Promise<null | string> => {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     method: "POST",
     body: params,
+    signal,
   }).then((r) => r.json());
   newAccessInfo.createAt = currentTimeSeconds;
   sessionStorage.setItem("accessInfo", JSON.stringify(accessInfo));

@@ -8,10 +8,15 @@ export default function Home({ params }: { params: { playlistId: string } }) {
   if (typeof window !== "undefined") {
     sessionStorage.setItem("playlistId", params.playlistId);
   }
-  getAccessTokenFromLocalStorage().then((v) => {
-    if (v) {
-      setIsLogin(true);
-    }
-  });
+  useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    getAccessTokenFromLocalStorage(signal).then((v) => {
+      if (v) {
+        setIsLogin(true);
+      }
+    });
+    return () => controller.abort();
+  }, []);
   return !isLogin ? <LoginComponent /> : <ManagementPlaylistComponent />;
 }
