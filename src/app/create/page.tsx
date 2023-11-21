@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 export default function Home() {
   const [playlistName, setPlaylistName] = useState("");
   const [isCreated, setIsCreated] = useState(false);
-  const [playlistID, setPlaylistID] = useState("");
+  const [shareURL, setShareURL] = useState("");
   const onCreate = async (playlistName: string) => {
     const playlistRef = collection(db, "playlists");
     const playlistId = uuidv4();
@@ -20,7 +20,11 @@ export default function Home() {
       tracks: [],
     };
     await setDoc(doc(playlistRef), playlist);
-    setPlaylistID(playlistId);
+    if (typeof window !== undefined) {
+      sessionStorage.setItem("playlistId", playlistId);
+    }
+    console.log(window.location.origin + "/view/" + playlistId);
+    setShareURL(window.location.origin + "/view/" + playlistId);
   };
   return !isCreated ? (
     <Box
@@ -49,8 +53,7 @@ export default function Home() {
     </Box>
   ) : (
     <>
-      PlaylistId {playlistID}
-      <div>プレイリストを作成しました</div>
+      <div>プレイリストを作成しました: {shareURL}</div>
     </>
   );
 }

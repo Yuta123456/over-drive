@@ -5,6 +5,7 @@ export type Playlist = {
   tracks: Track[];
 };
 export type Artist = {
+  id: string;
   name: string;
 };
 
