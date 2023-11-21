@@ -43,9 +43,7 @@ export default function Home() {
     >
       {!isCreated ? (
         <>
-          <Text textAlign={"center"}>
-            Spotifyにログインするだけでドライブ用のプレイリストを作成しましょう。
-          </Text>
+          <Text>ドライブ用のプレイリスト作成できます</Text>
           <Input
             marginTop={30}
             width={"50%"}
@@ -71,9 +69,9 @@ export default function Home() {
       ) : (
         <>
           <Text>プレイリストを作成しました</Text>
-          <Text>友達にURLを共有してみましょう!</Text>
-          <Text>
-            {shareURL}{" "}
+          <Text>友達にURLを共有してプレイリストを作成しましょう</Text>
+          <Box display={"flex"}>
+            <Input variant="outline" value={shareURL} marginRight={5} />{" "}
             <IconButton
               icon={<FaCopy />}
               onClick={() => {
@@ -86,7 +84,7 @@ export default function Home() {
               }}
               aria-label={"copy share url"}
             />
-          </Text>
+          </Box>
         </>
       )}
     </Box>

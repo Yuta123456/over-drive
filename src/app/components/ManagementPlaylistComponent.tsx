@@ -8,8 +8,23 @@ import {
   getFollowedArtists,
   redirectToAuthCodeFlow,
   getAccessTokenFromLocalStorage,
+  countDuplicateIds,
+  removeDuplicateIds,
 } from "@/utils";
-import { Box, Button } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CardFooter,
+  Heading,
+  Stack,
+  Text,
+  Image,
+  StackDivider,
+  VStack,
+  useToast,
+} from "@chakra-ui/react";
 import {
   collection,
   query,
@@ -19,8 +34,6 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
-import { useRecoilState } from "recoil";
-import useSWR from "swr";
 
 export const ManagementPlaylistComponent = () => {
   const [accessToken, setAccessToken] = useState<string>();
@@ -40,7 +53,9 @@ export const ManagementPlaylistComponent = () => {
   const [isAttend, setIsAttend] = useState(false);
   const [playlistDocumentId, setPlaylistDocumentId] = useState("");
   const [playlistData, setPlaylistData] = useState<Playlist>();
+  const toast = useToast();
   useEffect(() => {
+    console.log(playlistFirebaseId);
     if (!playlistFirebaseId) {
       return;
     }
@@ -53,6 +68,7 @@ export const ManagementPlaylistComponent = () => {
         }
 
         const playlistData: Playlist = snapshot.docs[0].data() as Playlist;
+
         const playlistDocumentId: string = snapshot.docs[0].id;
         return { playlistData, playlistDocumentId };
       });
@@ -61,7 +77,6 @@ export const ManagementPlaylistComponent = () => {
       }
       const { playlistData, playlistDocumentId } = playlistInfo;
       setPlaylistDocumentId(playlistDocumentId);
-      console.log(playlistData);
 
       setPlaylistData(playlistData);
     };
@@ -71,17 +86,23 @@ export const ManagementPlaylistComponent = () => {
     if (!accessToken || !playlistData) {
       return;
     }
-    console.log(accessToken, playlistData, playlistDocumentId);
     const followArtist = await getFollowedArtists(accessToken);
 
-    console.log(followArtist);
     const playlistRef = doc(db, "playlists", playlistDocumentId);
+    const newArtists = [...playlistData.artists, ...followArtist];
+    const countArtists = countDuplicateIds(newArtists);
+    const removeDuplicateArtists = removeDuplicateIds(newArtists);
     await updateDoc(playlistRef, {
       ...playlistData,
-      // 重複する
-      artists: [...playlistData.artists, ...followArtist],
+      artists: removeDuplicateArtists,
+      countArtists: countArtists,
     });
     setIsAttend(true);
+    toast({
+      description: "参加しました",
+      status: "success",
+      duration: 2000,
+    });
   };
 
   const downloadPlaylist = async () => {
@@ -93,19 +114,85 @@ export const ManagementPlaylistComponent = () => {
       playlistData.name
     );
     addTracks(playlistFirebaseId, spotifyPlaylistId, accessToken);
+    toast({
+      description: "ダウンロードしました",
+      status: "success",
+      duration: 2000,
+    });
   };
-  return !isAttend ? (
-    <Box w="100%" display="flex" justifyContent="center">
+  return (
+    <Box
+      w="80%"
+      display="flex"
+      margin="auto"
+      justifyContent="center"
+      alignItems={"center"}
+      flexDirection="column"
+      paddingY={50}
+    >
+      {playlistData && (
+        <>
+          <Heading paddingBottom={10} as="h3" fontSize={30}>
+            プレイリスト
+          </Heading>
+          <Heading as="h4" fontSize={30}>
+            {playlistData.name}
+          </Heading>
+          <VStack spacing={4} align="stretch" marginY={10}>
+            {playlistData.artists.length === 0 ? (
+              <Text>プレイリストに参加しましょう</Text>
+            ) : (
+              <>
+                {playlistData.artists.slice(0, 5).map((artist) => {
+                  return (
+                    <Card
+                      direction={{ base: "column", sm: "row" }}
+                      // overflow="hidden"
+                      variant="outline"
+                      key={artist.id}
+                      width={"100%"}
+                      boxShadow="lg"
+                      rounded="lg"
+                      p={2}
+                    >
+                      <Image
+                        objectFit="fill"
+                        maxW={{ base: "100%", sm: "100px" }}
+                        src={artist.imageURL}
+                        alt={artist.name}
+                      />
+                      <CardBody>
+                        <Heading size="md">{artist.name}</Heading>
+                      </CardBody>
+                    </Card>
+                  );
+                })}
+                <Text>and so on...</Text>
+              </>
+            )}
+          </VStack>
+        </>
+      )}
       <Button
         onClick={() => {
           downloadPlaylist().catch((e) => console.log(e));
         }}
+        colorScheme="green"
+        marginTop={30}
+        color="black"
       >
-        プレイリストをDL
+        プレイリストを取得
       </Button>
-      <Button onClick={() => attendPlaylist()}>プレイリストに参加</Button>
+      {!isAttend && (
+        <Button
+          colorScheme="green"
+          marginTop={30}
+          color="black"
+          onClick={() => attendPlaylist()}
+        >
+          プレイリストに参加
+        </Button>
+      )}
     </Box>
-  ) : (
-    <>参加しました</>
   );
 };

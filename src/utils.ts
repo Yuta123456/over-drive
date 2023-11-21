@@ -120,12 +120,23 @@ const getFollowedArtists = async (token: string): Promise<Artist[]> => {
     .then((r) => r.artists)
     .catch((e) => console.log(e));
   const items = res.items;
-  const artists = items.map((i: { id: string; name: string }) => {
-    return {
-      id: i.id,
-      name: i.name,
-    } as Artist;
-  });
+  const artists = items.map(
+    (i: {
+      id: string;
+      name: string;
+      images: {
+        height: number;
+        url: string;
+        width: number;
+      }[];
+    }) => {
+      return {
+        id: i.id,
+        name: i.name,
+        imageURL: i.images[0].url,
+      } as Artist;
+    }
+  );
   return artists;
 };
 const createPlaylist = async (token: string, playlistName: string) => {
@@ -221,12 +232,6 @@ const getAccessTokenFromLocalStorage = async (
   const createAt: number = accessInfo.createAt;
   const expiresIn: number = accessInfo.expires_in;
   const currentTimeSeconds: number = Math.floor(new Date().getTime() / 1000);
-  console.log(
-    createAt + expiresIn > currentTimeSeconds,
-    createAt,
-    expiresIn,
-    currentTimeSeconds
-  );
   if (createAt + expiresIn > currentTimeSeconds) {
     return accessInfo.access_token;
   }
@@ -245,9 +250,43 @@ const getAccessTokenFromLocalStorage = async (
   sessionStorage.setItem("accessInfo", JSON.stringify(accessInfo));
   return newAccessInfo.access_token;
 };
-// {"access_token":"BQDHsyOwzkDHB1aGuXIUfYTXmkihcer6AWo8TDGjqPJmSfdZ4cFKPHxctzlfTzPmAH02esg5Dcgus3L8rPkaQj7ib8DS11oPippoC0UqBLC8IDJTZVp40wVsx9XsY2tF7R-Jq9sHoxqhzQZGHID4e1_nntzome91hAJgKBQmvYFgvhumGY-HtifaeJ9Th2UGzcr_3eWU20I0f84MzGjrhsGudJ1WLBaknnX8Hml3Pdxsp0eeg2r_9Q1Ss3erBCpiTVqkrglE","token_type":"Bearer","expires_in":3600,"refresh_token":"AQD46--PWbPCfjX1343l-avJE05oHm8lj-xXL5Mf8hu7T5mNadBwFqXCexe3cMWXiLjlpCJE_bTaULxcl5cbhNu0kxY9bFzpFpyNP6wIMhnwU5GDEi-BGjmEIlnfrTWXVdA","scope":"user-library-read user-follow-read playlist-modify-public user-read-email user-read-private user-top-read","createAt":1700566989}
+function countDuplicateIds(artists: Artist[]): (Artist & { count: number })[] {
+  const idCountMap: { [id: string]: number } = {};
+
+  // IDの数を数える
+  for (const artist of artists) {
+    const id = artist.id;
+    idCountMap[id] = (idCountMap[id] || 0) + 1;
+  }
+
+  // 結果を配列に変換
+  const result: (Artist & { count: number })[] = [];
+  for (const id in idCountMap) {
+    if (idCountMap.hasOwnProperty(id)) {
+      const artist = artists.filter((a) => a.id === id)[0];
+      result.push({ ...artist, count: idCountMap[id] });
+    }
+  }
+
+  return result;
+}
+function removeDuplicateIds(artists: Artist[]): Artist[] {
+  const uniqueIds: Set<string> = new Set();
+  const result: Artist[] = [];
+
+  for (const artist of artists) {
+    if (!uniqueIds.has(artist.id)) {
+      // IDがまだ出現していない場合、結果に追加しセットに登録
+      result.push(artist);
+      uniqueIds.add(artist.id);
+    }
+  }
+
+  return result;
+}
 export {
   addTracks,
+  removeDuplicateIds,
   getAccessTokenFromLocalStorage,
   copyToClipboard,
   createPlaylist,
@@ -258,4 +297,5 @@ export {
   getSavedAlbums,
   getTopItems,
   getFollowedArtists,
+  countDuplicateIds,
 };

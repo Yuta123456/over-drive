@@ -7,6 +7,7 @@ export type Playlist = {
 export type Artist = {
   id: string;
   name: string;
+  imageURL: string;
 };
 
 export type Track = {
