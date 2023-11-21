@@ -1,4 +1,6 @@
-import { Artist } from "./type";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { Artist, Playlist } from "./type";
+import { db } from "./firebase";
 
 const clientId = "602be77013674f7b92c888d547dc627a"; // Replace with your client id
 const code = undefined;
@@ -16,7 +18,7 @@ async function redirectToAuthCodeFlow(playlistId?: string) {
   params.append("redirect_uri", "http://localhost:3000/callback");
   params.append(
     "scope",
-    "user-read-private user-read-email user-library-read user-top-read user-follow-read"
+    "user-read-private user-read-email playlist-modify-public user-library-read user-top-read user-follow-read"
   );
   params.append("code_challenge_method", "S256");
   params.append("code_challenge", challenge);
@@ -116,7 +118,81 @@ const getFollowedArtists = async (token: string): Promise<Artist[]> => {
   });
   return artists;
 };
+const createPlaylist = async (token: string, playlistName: string) => {
+  const profile = await fetchProfile(token);
+  const userId = profile.id;
+  console.log(playlistName);
+  const res = await fetch(
+    `https://api.spotify.com/v1/users/${userId}/playlists`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        name: playlistName,
+      }),
+    }
+  )
+    .then((r) => r.json())
+    .catch((e) => console.log(e));
+  const playlistId: string = res.id;
+  console.log(res, playlistId);
+  return playlistId;
+};
+
+const addTracks = async (
+  playlistFirebaseId: string,
+  playlistSpotifyId: string,
+  token: string
+) => {
+  const playlistsRef = collection(db, "playlists");
+  const q = query(playlistsRef, where("id", "==", playlistFirebaseId));
+  const playlistInfo = await getDocs(q).then((snapshot) => {
+    if (snapshot.size !== 1) {
+      return;
+    }
+
+    const playlistData: Playlist = snapshot.docs[0].data() as Playlist;
+    const playlistDocumentId: string = snapshot.docs[0].id;
+    return { playlistData, playlistDocumentId };
+  });
+  if (!playlistInfo) {
+    return;
+  }
+  const { playlistData, playlistDocumentId } = playlistInfo;
+  const tracks = await Promise.all(
+    playlistData.artists.map(async (artist) => {
+      return fetch(
+        `https://api.spotify.com/v1/artists/${artist.id}/top-tracks?market=JP`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      ).then(async (r) => {
+        const res = await r.json();
+        return res.tracks as any[];
+      });
+    })
+  );
+  const trackUris: string[] = tracks
+    .flat()
+    .slice(0, 100)
+    .map((t) => t.uri);
+
+  await fetch(
+    `https://api.spotify.com/v1/playlists/${playlistSpotifyId}/tracks`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        uris: trackUris,
+      }),
+    }
+  );
+};
+
 export {
+  addTracks,
+  createPlaylist,
   redirectToAuthCodeFlow,
   clientId,
   getUserAccessToken,
