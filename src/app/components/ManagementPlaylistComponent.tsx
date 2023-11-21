@@ -54,7 +54,6 @@ export const ManagementPlaylistComponent = () => {
   const [playlistData, setPlaylistData] = useState<Playlist>();
   const toast = useToast();
   useEffect(() => {
-    console.log(playlistFirebaseId);
     if (!playlistFirebaseId) {
       return;
     }

@@ -65,7 +65,6 @@ async function getUserAccessToken(code: string): Promise<string | null> {
   });
 
   const newAccessInfo = await result.json();
-  console.log(newAccessInfo);
   if (typeof window !== "undefined" && newAccessInfo.access_token) {
     const currentTimeSeconds: number = Math.floor(new Date().getTime() / 1000);
 
@@ -142,7 +141,6 @@ const getFollowedArtists = async (token: string): Promise<Artist[]> => {
 const createPlaylist = async (token: string, playlistName: string) => {
   const profile = await fetchProfile(token);
   const userId = profile.id;
-  console.log(playlistName);
   const res = await fetch(
     `https://api.spotify.com/v1/users/${userId}/playlists`,
     {
@@ -156,7 +154,6 @@ const createPlaylist = async (token: string, playlistName: string) => {
     .then((r) => r.json())
     .catch((e) => console.log(e));
   const playlistId: string = res.id;
-  console.log(res, playlistId);
   return playlistId;
 };
 
@@ -171,7 +168,6 @@ const addTracks = async (
     if (snapshot.size !== 1) {
       return;
     }
-
     const playlistData: Playlist = snapshot.docs[0].data() as Playlist;
     const playlistDocumentId: string = snapshot.docs[0].id;
     return { playlistData, playlistDocumentId };
@@ -181,7 +177,7 @@ const addTracks = async (
   }
   const { playlistData, playlistDocumentId } = playlistInfo;
   const tracks = await Promise.all(
-    playlistData.artists.map(async (artist) => {
+    playlistData.countArtists.map(async (artist) => {
       return fetch(
         `https://api.spotify.com/v1/artists/${artist.id}/top-tracks?market=JP`,
         {
@@ -190,7 +186,8 @@ const addTracks = async (
         }
       ).then(async (r) => {
         const res = await r.json();
-        return res.tracks as any[];
+        const tracks = res.tracks as any[];
+        return tracks.slice(0, Math.min(artist.count, 10));
       });
     })
   );

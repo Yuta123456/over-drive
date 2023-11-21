@@ -3,6 +3,7 @@ export type Playlist = {
   name: string;
   artists: Artist[];
   tracks: Track[];
+  countArtists: (Artist & { count: number })[];
 };
 export type Artist = {
   id: string;

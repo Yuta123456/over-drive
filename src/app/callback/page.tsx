@@ -16,7 +16,6 @@ export default function Home() {
   const setAccessToken = async () => {
     if (code) {
       const accessToken = await getUserAccessToken(code);
-      console.log(accessToken, playlistId);
       if (playlistId) {
         router.push("/view/" + playlistId);
       }
