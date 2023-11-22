@@ -32,6 +32,7 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export const ManagementPlaylistComponent = () => {
@@ -52,33 +53,35 @@ export const ManagementPlaylistComponent = () => {
   const [isAttend, setIsAttend] = useState(false);
   const [playlistDocumentId, setPlaylistDocumentId] = useState("");
   const [playlistData, setPlaylistData] = useState<Playlist>();
+  const router = useRouter();
   const toast = useToast();
+  const init = async () => {
+    const playlistsRef = collection(db, "playlists");
+    const q = query(playlistsRef, where("id", "==", playlistFirebaseId));
+    const playlistInfo = await getDocs(q).then((snapshot) => {
+      if (snapshot.size !== 1) {
+        return;
+      }
+
+      const playlistData: Playlist = snapshot.docs[0].data() as Playlist;
+
+      const playlistDocumentId: string = snapshot.docs[0].id;
+      return { playlistData, playlistDocumentId };
+    });
+    if (!playlistInfo) {
+      return;
+    }
+    const { playlistData, playlistDocumentId } = playlistInfo;
+    setPlaylistDocumentId(playlistDocumentId);
+
+    setPlaylistData(playlistData);
+  };
   useEffect(() => {
     if (!playlistFirebaseId) {
       return;
     }
-    const init = async () => {
-      const playlistsRef = collection(db, "playlists");
-      const q = query(playlistsRef, where("id", "==", playlistFirebaseId));
-      const playlistInfo = await getDocs(q).then((snapshot) => {
-        if (snapshot.size !== 1) {
-          return;
-        }
-
-        const playlistData: Playlist = snapshot.docs[0].data() as Playlist;
-
-        const playlistDocumentId: string = snapshot.docs[0].id;
-        return { playlistData, playlistDocumentId };
-      });
-      if (!playlistInfo) {
-        return;
-      }
-      const { playlistData, playlistDocumentId } = playlistInfo;
-      setPlaylistDocumentId(playlistDocumentId);
-
-      setPlaylistData(playlistData);
-    };
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playlistFirebaseId]);
   const attendPlaylist = async () => {
     if (!accessToken || !playlistData) {
@@ -101,6 +104,7 @@ export const ManagementPlaylistComponent = () => {
       status: "success",
       duration: 2000,
     });
+    init();
   };
 
   const downloadPlaylist = async () => {
@@ -141,7 +145,7 @@ export const ManagementPlaylistComponent = () => {
               <Text>プレイリストに参加しましょう</Text>
             ) : (
               <>
-                {playlistData.artists.slice(0, 5).map((artist) => {
+                {playlistData.artists.slice(0, 4).map((artist) => {
                   return (
                     <Card
                       direction={{ base: "column", sm: "row" }}
@@ -159,38 +163,42 @@ export const ManagementPlaylistComponent = () => {
                         src={artist.imageURL}
                         alt={artist.name}
                       />
-                      <CardBody>
+                      <CardBody alignItems={"center"} display="flex">
                         <Heading size="md">{artist.name}</Heading>
                       </CardBody>
                     </Card>
                   );
                 })}
-                <Text>and so on...</Text>
+                {playlistData.artists.length - 4 > 0 && (
+                  <Text>
+                    その他{playlistData.artists.length - 4}人のアーティスト
+                  </Text>
+                )}
               </>
             )}
           </VStack>
         </>
       )}
-      <Button
-        onClick={() => {
-          downloadPlaylist().catch((e) => console.log(e));
-        }}
-        colorScheme="green"
-        marginTop={30}
-        color="black"
-      >
-        プレイリストを取得
-      </Button>
-      {!isAttend && (
+      <Stack flexDirection={"row"}>
         <Button
+          onClick={() => {
+            downloadPlaylist().catch((e) => console.log(e));
+          }}
           colorScheme="green"
-          marginTop={30}
           color="black"
-          onClick={() => attendPlaylist()}
         >
-          プレイリストに参加
+          プレイリストを取得
         </Button>
-      )}
+        {!isAttend && (
+          <Button
+            colorScheme="green"
+            color="black"
+            onClick={() => attendPlaylist()}
+          >
+            プレイリストに参加
+          </Button>
+        )}
+      </Stack>
     </Box>
   );
 };
