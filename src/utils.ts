@@ -7,7 +7,7 @@ const code = undefined;
 
 function getCurrentURL(): string | null {
   if (typeof window !== "undefined") {
-    return window.location.href;
+    return window.location.origin;
   } else {
     return null;
   }
@@ -71,6 +71,7 @@ async function getUserAccessToken(code: string): Promise<string | null> {
     return null;
   }
   params.append("redirect_uri", url + "/callback");
+  console.log(url + "/callback");
   params.append("code_verifier", verifier!);
 
   const result = await fetch("https://accounts.spotify.com/api/token", {

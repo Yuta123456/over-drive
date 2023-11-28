@@ -18,6 +18,7 @@ export default function Home() {
       name: playlistName,
       artists: [],
       tracks: [],
+      countArtists: [],
     };
     await setDoc(doc(playlistRef), playlist);
     if (typeof window !== undefined) {
