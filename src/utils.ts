@@ -5,6 +5,13 @@ import { db } from "./firebase";
 const clientId = "602be77013674f7b92c888d547dc627a";
 const code = undefined;
 
+function getCurrentURL(): string | null {
+  if (typeof window !== "undefined") {
+    return window.location.href;
+  } else {
+    return null;
+  }
+}
 async function redirectToAuthCodeFlow(playlistId?: string) {
   // TODO: Redirect to Spotify authorization page
   const verifier = generateCodeVerifier(128);
@@ -15,7 +22,11 @@ async function redirectToAuthCodeFlow(playlistId?: string) {
   const params = new URLSearchParams();
   params.append("client_id", clientId);
   params.append("response_type", "code");
-  params.append("redirect_uri", "http://localhost:3000/callback");
+  const url = getCurrentURL();
+  if (url === null) {
+    return;
+  }
+  params.append("redirect_uri", url + "/callback");
   params.append(
     "scope",
     "user-read-private user-read-email playlist-modify-public user-library-read user-top-read user-follow-read"
@@ -55,7 +66,11 @@ async function getUserAccessToken(code: string): Promise<string | null> {
   params.append("client_id", clientId);
   params.append("grant_type", "authorization_code");
   params.append("code", code);
-  params.append("redirect_uri", `http://localhost:3000/callback`);
+  const url = getCurrentURL();
+  if (url === null) {
+    return null;
+  }
+  params.append("redirect_uri", url + "/callback");
   params.append("code_verifier", verifier!);
 
   const result = await fetch("https://accounts.spotify.com/api/token", {
